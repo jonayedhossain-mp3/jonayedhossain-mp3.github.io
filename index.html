@@ -28,38 +28,35 @@
     color: var(--white);
     font-family: 'Syne', sans-serif;
     overflow-x: hidden;
-    cursor: none;
-  }
-  @media (hover: none), (pointer: coarse) {
-    body, button, a { cursor: auto; }
   }
 
-  /* Custom cursor */
+  /* Custom cursor handled by JS */
+    .cursor, .cursor-ring { display: none !important; }
+  }
+
+  /* ── Custom cursor dots ── */
   .cursor {
-    width: 12px; height: 12px;
+    width: 12px;
+    height: 12px;
     background: var(--green-glow);
     border-radius: 50%;
     position: fixed;
     top: 0; left: 0;
     pointer-events: none;
-    z-index: 9999;
-    opacity: 1;
-    will-change: transform;
-    transform: translate(-100px, -100px);
-    transition: width 0.2s, height 0.2s;
+    z-index: 99999;
+    display: none;
   }
   .cursor-ring {
-    width: 36px; height: 36px;
+    width: 36px;
+    height: 36px;
     border: 1.5px solid var(--green-bright);
     border-radius: 50%;
     position: fixed;
     top: 0; left: 0;
     pointer-events: none;
-    z-index: 9998;
-    opacity: 0.55;
-    will-change: transform;
-    transform: translate(-100px, -100px);
-    transition: width 0.2s, height 0.2s;
+    z-index: 99998;
+    opacity: 0.6;
+    display: none;
   }
 
   /* Noise overlay */
@@ -226,7 +223,6 @@
     text-transform: uppercase;
     text-decoration: none;
     transition: background 0.25s, border-color 0.25s, box-shadow 0.25s;
-    cursor: none;
   }
   .btn-primary:hover {
     background: var(--green-mid);
@@ -244,7 +240,6 @@
     text-transform: uppercase;
     text-decoration: none;
     transition: border-color 0.25s, color 0.25s;
-    cursor: none;
   }
   .btn-ghost:hover {
     border-color: var(--green-bright);
@@ -820,7 +815,6 @@
     position: relative;
     overflow: hidden;
     background: var(--green-deep);
-    cursor: none;
   }
   .pg-tall {
     grid-row: span 2;
@@ -941,11 +935,7 @@
   .mobile-menu a:last-child { border-bottom: none; }
   .mobile-menu a:hover { color: var(--green-glow); }
 
-  /* ── Touch devices: hide custom cursor ────────────── */
-  @media (hover: none) {
-    body { cursor: auto; }
-    .cursor, .cursor-ring { display: none !important; }
-  }
+
 
   /* ── Tablet (≤900px) ──────────────────────────────── */
   @media (max-width: 900px) {
@@ -1343,40 +1333,49 @@ function closeMenu() {
 </footer>
 
 <script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
-  // ── Custom cursor — always on, scroll-proof ─────────────────────────────────
+  // ── Custom cursor ────────────────────────────────────────────────────────────
   (function() {
-    const cursor = document.getElementById('cursor');
-    const ring   = document.getElementById('cursorRing');
-    let mx = -200, my = -200;
-    let rx = -200, ry = -200;
-    let dotW = 12, ringW = 36;
+    var cur  = document.getElementById('cursor');
+    var ring = document.getElementById('cursorRing');
+    var mx = 0, my = 0, rx = 0, ry = 0;
+    var active = false;
 
-    document.addEventListener('mousemove', e => {
+    // Show only when mouse actually moves (= real mouse, not touch)
+    document.addEventListener('mousemove', function(e) {
       mx = e.clientX;
       my = e.clientY;
-      cursor.style.transform = `translate(calc(${mx}px - 50%), calc(${my}px - 50%))`;
+      if (!active) {
+        active = true;
+        cur.style.display  = 'block';
+        ring.style.display = 'block';
+        document.body.style.cursor = 'none';
+        rx = mx; ry = my;
+      }
+      cur.style.left = (mx - 6) + 'px';
+      cur.style.top  = (my - 6) + 'px';
     });
 
-    // Ring lags behind with smooth rAF loop — viewport-relative, scroll-proof
+    // Ring smooth follow
     (function raf() {
-      rx += (mx - rx) * 0.12;
-      ry += (my - ry) * 0.12;
-      ring.style.transform = `translate(calc(${rx}px - 50%), calc(${ry}px - 50%))`;
+      if (active) {
+        rx += (mx - rx) * 0.12;
+        ry += (my - ry) * 0.12;
+        ring.style.left = (rx - 18) + 'px';
+        ring.style.top  = (ry - 18) + 'px';
+      }
       requestAnimationFrame(raf);
     })();
 
-    // Hover scale on interactive elements
-    document.querySelectorAll('a, button, .skill-pill, .activity-card, .stat-cell, .edu-card, .pg-item').forEach(el => {
-      el.addEventListener('mouseenter', () => {
-        dotW = 20; ringW = 54;
-        cursor.style.width  = dotW  + 'px'; cursor.style.height  = dotW  + 'px';
-        ring.style.width    = ringW + 'px'; ring.style.height    = ringW + 'px';
-      });
-      el.addEventListener('mouseleave', () => {
-        dotW = 12; ringW = 36;
-        cursor.style.width  = dotW  + 'px'; cursor.style.height  = dotW  + 'px';
-        ring.style.width    = ringW + 'px'; ring.style.height    = ringW + 'px';
-      });
+    // Scale on hover
+    document.addEventListener('mouseover', function(e) {
+      var t = e.target.closest('a, button, .skill-pill, .activity-card, .stat-cell, .edu-card, .pg-item');
+      if (t) {
+        cur.style.transform  = 'scale(1.6)';
+        ring.style.transform = 'scale(1.5)';
+      } else {
+        cur.style.transform  = 'scale(1)';
+        ring.style.transform = 'scale(1)';
+      }
     });
   })();
 
