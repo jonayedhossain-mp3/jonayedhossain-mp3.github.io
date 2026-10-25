@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>15-Day Habit Tracker</title>
+<style>
+:root{--bg:#f6faf7;--card:#fff;--ink:#17332f;--mute:#5b706c;--line:#d6e4df;--teal:#0f5b57;--ok:#1f8a4c;--hi:#fff3c9;--done:#dff3e1}
+@media(prefers-color-scheme:dark){:root{--bg:#10201e;--card:#18302d;--ink:#e6f2ef;--mute:#9bb5af;--line:#2c4a45;--teal:#5fc4bb;--ok:#5fd18a;--hi:#4a4020;--done:#244530}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Trebuchet MS","Segoe UI",system-ui,sans-serif;line-height:1.45;padding:16px;max-width:900px;margin-inline:auto}
+h1{font-size:1.9rem;margin:6px 0 2px;color:var(--teal)}
+.sub{color:var(--mute);margin:0 0 14px}
+.top{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.stat b{display:block;font-size:1.6rem;color:var(--teal)}
+.stat span{color:var(--mute);font-size:.88rem}
+.bar{height:12px;background:var(--line);border-radius:6px;overflow:hidden;margin-bottom:14px}
+.bar i{display:block;height:100%;width:0;background:var(--ok);transition:width .3s}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px;color:var(--mute);font-size:.92rem}
+input[type=date],button.rs{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--ink)}
+button.rs{cursor:pointer}
+.days{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.day{background:var(--card);border:2px solid var(--line);border-radius:12px;padding:12px}
+.day.today{border-color:var(--teal);background:var(--hi);color:#17332f}
+.day.today .dt,.day.today .cnt{color:#3d544f}
+.day.full{background:var(--done);color:#17332f}
+.day.full .dt,.day.full .cnt{color:#3d544f}
+.hd{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.hd h2{margin:0;font-size:1.1rem}
+.dt{font-size:.82rem;color:var(--mute)}
+.cnt{font-size:.82rem;color:var(--mute);margin-top:6px}
+label{display:flex;align-items:center;gap:10px;padding:6px 2px;cursor:pointer;min-height:36px}
+input[type=checkbox]{width:20px;height:20px;accent-color:var(--ok);flex:none}
+input:focus-visible,button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
+label small{color:var(--mute);margin-left:auto;font-size:.78rem}
+.day.today label small,.day.full label small{color:#3d544f}
+.foot{text-align:center;color:var(--mute);font-style:italic;margin-top:20px}
+</style>
+</head>
+<body>
+<h1>15-Day Habit Tracker</h1>
+<p class="sub">Tick each food as you eat it. Meals follow your 7-day plan and repeat from Day 8. Your progress saves on this device.</p>
+
+<div class="top">
+<div class="stat"><b id="sDays">0/15</b><span>Days fully done</span></div>
+<div class="stat"><b id="sPct">0%</b><span>Overall habits done</span></div>
+<div class="stat"><b id="sStreak">0</b><span>Day streak</span></div>
+</div>
+<div class="bar" role="progressbar" aria-label="Overall progress"><i id="fill"></i></div>
+
+<div class="ctl">
+<label for="start" style="min-height:0;padding:0">Start date</label>
+<input type="date" id="start">
+<button class="rs" id="reset">Clear all ticks</button>
+</div>
+
+<div class="days" id="days"></div>
+<p class="foot">Small healthy choices every day = big difference.</p>
+
+<script>
+var PLAN=[
+{b:["Egg","Roti","Banana"],l:["Rice","Fish","Vegetables"],d:["Rice","Egg","Vegetables"]},
+{b:["Chira","Milk","Banana","Peanuts"],l:["Rice","Chicken","Vegetables"],d:["Roti","Egg omelette"]},
+{b:["2 eggs","Bread"],l:["Rice","Fish","Dal (if tolerated)"],d:["Rice","Chicken","Carrots"]},
+{b:["Chira","Banana","Peanuts"],l:["Rice","Chicken","Vegetables"],d:["Rice","Fish","Cooked vegetables"]},
+{b:["Egg sandwich"],l:["Rice","Fish","Vegetables"],d:["Rice","Egg","Dal (if tolerated)"]},
+{b:["Roti","Omelette"],l:["Rice","Chicken","Vegetables"],d:["Khichuri","Egg (if tolerated)"]},
+{b:["Chira","Egg"],l:["Rice","Fish","Cooked vegetables"],d:["Rice","Chicken or egg"]}];
+var N=15,KEY="habit15v2",state={start:"",done:{}};
+function items(i){var p=PLAN[i%7],o=[];
+p.b.forEach(function(f){o.push([f,"8 AM"]);});
+o.push(["Roasted chola (or peanuts)","10:30 AM"]);
+p.l.forEach(function(f){o.push([f,"1 PM"]);});
+o.push(["Milk (lactose-free if needed)","4 PM"]);o.push(["Banana","4 PM"]);
+p.d.forEach(function(f){o.push([f,"8 PM"]);});
+o.push(["Water 1.5–2 L",""]);o.push(["Light walk / stretch",""]);o.push(["Sleep 7–9 hours",""]);
+return o;}
+function load(){try{var s=localStorage.getItem(KEY);if(s)state=JSON.parse(s);}catch(e){}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+function iso(d){var m=d.getMonth()+1,x=d.getDate();return d.getFullYear()+"-"+(m<10?"0":"")+m+"-"+(x<10?"0":"")+x;}
+function dayDate(i){var p=state.start.split("-");return new Date(+p[0],+p[1]-1,+p[2]+i);}
+function fmt(d){return d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});}
+function count(i){var n=0;items(i).forEach(function(x,j){if(state.done[i+"_"+j])n++;});return n;}
+function render(){
+var box=document.getElementById("days"),todayIso=iso(new Date());box.innerHTML="";
+for(var i=0;i<N;i++){
+var dd=dayDate(i),el=document.createElement("div");el.className="day";el.id="d"+i;
+if(iso(dd)===todayIso)el.className+=" today";
+var h='<div class="hd"><h2>Day '+(i+1)+'</h2><span class="dt">'+fmt(dd)+'</span></div>';
+items(i).forEach(function(x,j){var k=i+"_"+j;
+h+='<label><input type="checkbox" data-k="'+k+'"'+(state.done[k]?" checked":"")+'>'+x[0]+(x[1]?'<small>'+x[1]+'</small>':'')+'</label>';});
+h+='<div class="cnt"></div>';el.innerHTML=h;box.appendChild(el);}
+update();}
+function update(){
+var total=0,all=0,full=0,streak=0,broken=false;
+for(var i=0;i<N;i++){var c=count(i),t=items(i).length;total+=c;all+=t;var el=document.getElementById("d"+i);
+el.querySelector(".cnt").textContent=c+" of "+t+" done";
+var f=c===t;el.classList.toggle("full",f);if(f)full++;
+if(f&&!broken)streak++;else if(!f)broken=true;}
+var pct=Math.round(total/all*100);
+document.getElementById("sDays").textContent=full+"/"+N;
+document.getElementById("sPct").textContent=pct+"%";
+document.getElementById("sStreak").textContent=streak;
+document.getElementById("fill").style.width=pct+"%";
+document.querySelector(".bar").setAttribute("aria-valuenow",pct);}
+document.getElementById("days").addEventListener("change",function(e){
+var k=e.target.getAttribute("data-k");if(!k)return;
+if(e.target.checked)state.done[k]=1;else delete state.done[k];save();update();});
+document.getElementById("start").addEventListener("change",function(e){
+if(!e.target.value)return;state.start=e.target.value;save();render();});
+document.getElementById("reset").addEventListener("click",function(){
+if(confirm("Clear all ticks? Your start date stays.")){state.done={};save();render();}});
+load();if(!state.start){state.start=iso(new Date());save();}
+document.getElementById("start").value=state.start;render();
+var t=document.querySelector(".today");if(t)t.scrollIntoView({block:"center"});
+</script>
+</body>
+</html>
